@@ -5,23 +5,17 @@ const PAGE: "candidate" | "boss" = "candidate";
 
 const CONFIG = {
   candidate: {
-    headline: "BOSSES OF BANGALORE",
-    bubbles: [
-      "i scan across multiple boards to find the right one for you.",
-      "filtering through the noise — that's my job.",
-      "so, ready to get a job you'll love?",
-    ],
-    sliderLabel: "SLIDE INTO TAL'S DM",
+    eyebrow: "You are about to join",
+    brand: "bosses of bangalore",
+    badge: "beta",
+    buttonLabel: "Join the group",
     redirectUrl: "https://chat.whatsapp.com/CurDSi18V6SG2QAzRblo45",
   },
   boss: {
-    headline: "I FIND YOU THE RIGHT HIRE",
-    bubbles: [
-      "tell me who you need. i'll surface real, vetted candidates.",
-      "no job posts, no inbox spam — i message them first.",
-      "so, ready to meet your next hire?",
-    ],
-    sliderLabel: "SLIDE TO MEET CANDIDATES",
+    eyebrow: "You are about to meet",
+    brand: "your next hire",
+    badge: "beta",
+    buttonLabel: "Join the group",
     redirectUrl: "https://chat.whatsapp.com/CurDSi18V6SG2QAzRblo45",
   },
 } as const;
@@ -29,145 +23,139 @@ const CONFIG = {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Tal — Slide Into My DM" },
-      { name: "description", content: "Tal does your job search for you. Slide to start." },
-      { property: "og:title", content: "Tal — Slide Into My DM" },
-      { property: "og:description", content: "Tal does your job search for you. Slide to start." },
+      { title: "Bosses of Bangalore" },
+      {
+        name: "description",
+        content: "You're about to join bosses of bangalore (beta). With love, by Tal.",
+      },
+      { property: "og:title", content: "Bosses of Bangalore" },
+      {
+        property: "og:description",
+        content: "You're about to join bosses of bangalore (beta). With love, by Tal.",
+      },
     ],
   }),
   component: Index,
 });
 
-const HANDLE_SIZE = 58;
-const TRACK_PADDING = 6;
+const AUTO_PRESS_MS = 2000;
+
+function WhatsAppIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.79 3.08 1.2 4.79 1.2h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 18.15h-.01a8.2 8.2 0 0 1-4.18-1.14l-.3-.18-3.11.82.83-3.04-.2-.31a8.18 8.18 0 0 1-1.26-4.36c0-4.54 3.7-8.23 8.24-8.23 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.82c0 4.54-3.7 8.2-8.24 8.2zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.17.25-.64.8-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.17-.25.25-.42.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.17-.47-.29z" />
+    </svg>
+  );
+}
+
+function HeartIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M12 21s-6.72-4.35-9.34-8.08C.58 9.88 1.4 6.49 4.2 5.4c1.9-.74 3.86.05 5 1.66L12 9.9l2.8-2.84c1.14-1.61 3.1-2.4 5-1.66 2.8 1.09 3.62 4.48 1.54 7.52C18.72 16.65 12 21 12 21z" />
+    </svg>
+  );
+}
 
 function Index() {
   const cfg = CONFIG[PAGE];
-  const trackRef = useRef<HTMLDivElement>(null);
-  const handleRef = useRef<HTMLDivElement>(null);
-  const [dragging, setDragging] = useState(false);
-  const [x, setX] = useState(0);
-  const [maxX, setMaxX] = useState(0);
-  const startRef = useRef({ pointerX: 0, startX: 0 });
-  const completedRef = useRef(false);
+  const [mounted, setMounted] = useState(false);
+  const [fill, setFill] = useState(0);
+  const [fillMs, setFillMs] = useState(AUTO_PRESS_MS);
+  const [pressed, setPressed] = useState(false);
+  const firedRef = useRef(false);
 
-  useEffect(() => {
-    const compute = () => {
-      if (!trackRef.current) return;
-      const w = trackRef.current.clientWidth;
-      setMaxX(w - HANDLE_SIZE - TRACK_PADDING * 2);
-    };
-    compute();
-    window.addEventListener("resize", compute);
-    return () => window.removeEventListener("resize", compute);
-  }, []);
-
-  const getPointerX = (e: PointerEvent | React.PointerEvent) =>
-    "clientX" in e ? e.clientX : 0;
-
-  const onPointerDown = (e: React.PointerEvent) => {
-    if (completedRef.current) return;
-    setDragging(true);
-    startRef.current = { pointerX: e.clientX, startX: x };
-    (e.target as Element).setPointerCapture?.(e.pointerId);
+  const go = () => {
+    if (firedRef.current) return;
+    firedRef.current = true;
+    setFillMs(180);
+    setFill(100);
+    setPressed(true);
+    setTimeout(() => {
+      window.location.href = cfg.redirectUrl;
+    }, 200);
   };
 
   useEffect(() => {
-    if (!dragging) return;
-
-    const move = (e: PointerEvent) => {
-      const dx = getPointerX(e) - startRef.current.pointerX;
-      const next = Math.max(0, Math.min(maxX, startRef.current.startX + dx));
-      setX(next);
-    };
-
-    const up = () => {
-      setDragging(false);
-      if (maxX > 0 && x / maxX >= 0.9) {
-        completedRef.current = true;
-        setX(maxX);
-        setTimeout(() => {
-          window.location.href = cfg.redirectUrl;
-        }, 150);
-      } else {
-        setX(0);
-      }
-    };
-
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-    window.addEventListener("pointercancel", up);
+    const ua = navigator.userAgent || "";
+    // Mobile skips the interstitial and goes straight to the WhatsApp link
+    if (/Android|iPhone|iPad|iPod/i.test(ua)) {
+      window.location.href = cfg.redirectUrl;
+      return;
+    }
+    // Desktop keeps this middle page with the auto-press CTA
+    setMounted(true);
+    const raf = requestAnimationFrame(() => setFill(100));
+    const timer = setTimeout(go, AUTO_PRESS_MS);
     return () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-      window.removeEventListener("pointercancel", up);
+      cancelAnimationFrame(raf);
+      clearTimeout(timer);
     };
-  }, [dragging, maxX, x, cfg.redirectUrl]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const progress = maxX > 0 ? x / maxX : 0;
-  const labelOpacity = Math.max(0, 1 - progress * 1.4);
+  const rise = (delay: number) => ({
+    opacity: mounted ? 1 : 0,
+    transform: mounted ? "translateY(0)" : "translateY(14px)",
+    transition: `opacity 700ms ease ${delay}ms, transform 700ms cubic-bezier(0.22,1,0.36,1) ${delay}ms`,
+  });
 
   return (
     <div
-      className="fixed inset-0 flex flex-col overflow-hidden"
-      style={{ backgroundColor: "#FF6B1A" }}
+      className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden px-6"
+      style={{ background: "linear-gradient(165deg, #FF8A3D 0%, #FF6B1A 52%, #EF5A0C 100%)" }}
     >
-      <main className="flex flex-1 flex-col gap-4 px-4 pt-5 pb-28 overflow-hidden">
-        {/* Tile 1 — Title front and center */}
-        <section className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm px-5 py-8 flex items-center justify-center">
-          <h1 className="text-white text-center font-black uppercase tracking-tight leading-[0.95] text-[2.5rem] sm:text-5xl">
-            {cfg.headline}
-          </h1>
-        </section>
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(115% 75% at 50% 12%, rgba(255,255,255,0.22), rgba(255,255,255,0) 58%)",
+        }}
+      />
 
-        {/* Tile 2 — Mascot + messages */}
-        <section className="flex-1 min-h-0 rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-5 flex flex-col items-center gap-4 overflow-hidden">
-          <div className="w-[55%] max-w-[200px] aspect-square rounded-[1.75rem] bg-white/20 border border-white/25 flex items-center justify-center overflow-hidden shrink-0">
-            <span className="text-white/70 text-sm">mascot</span>
-          </div>
-
-          <div className="w-full flex flex-col gap-2 items-start overflow-y-auto">
-            {cfg.bubbles.map((b, i) => (
-              <div
-                key={i}
-                className="rounded-2xl rounded-bl-md px-4 py-3 text-[15px] leading-snug text-neutral-900 shadow-sm max-w-[88%]"
-                style={{ backgroundColor: "#FDF6EC" }}
-              >
-                {b}
-              </div>
-            ))}
-          </div>
-        </section>
-      </main>
-
-      <div className="fixed bottom-4 left-4 right-4 z-10">
-        <div
-          ref={trackRef}
-          className="relative w-full rounded-full bg-black select-none"
-          style={{ height: 70 }}
-        >
-          <span
-            className="absolute inset-0 flex items-center justify-center text-[13px] font-semibold tracking-[0.18em] text-neutral-400 pointer-events-none"
-            style={{ opacity: labelOpacity }}
+      <div className="relative z-10 flex w-full max-w-sm flex-col items-center gap-10">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <p className="text-white/85 text-base font-medium tracking-wide" style={rise(60)}>
+            {cfg.eyebrow}
+          </p>
+          <h1
+            className="text-white font-black lowercase tracking-tight leading-[0.92] text-[2.85rem] sm:text-6xl"
+            style={rise(140)}
           >
-            {cfg.sliderLabel}
+            {cfg.brand}
+          </h1>
+          <span
+            className="inline-flex items-center rounded-full bg-black px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-white shadow-sm"
+            style={rise(240)}
+          >
+            {cfg.badge}
           </span>
+        </div>
 
-          <div
-            ref={handleRef}
-            onPointerDown={onPointerDown}
-            className="absolute rounded-full bg-white flex items-center justify-center shadow-md touch-none cursor-grab active:cursor-grabbing"
+        <div className="flex w-full flex-col items-center gap-3.5" style={rise(360)}>
+          <button
+            type="button"
+            onClick={go}
+            aria-label={cfg.buttonLabel}
+            className="relative w-full overflow-hidden rounded-full bg-black flex items-center justify-center gap-2.5 select-none shadow-lg shadow-black/25"
             style={{
-              width: HANDLE_SIZE,
-              height: HANDLE_SIZE,
-              top: (70 - HANDLE_SIZE) / 2,
-              left: TRACK_PADDING,
-              transform: `translateX(${x}px)`,
-              transition: dragging ? "none" : "transform 320ms cubic-bezier(0.22, 1, 0.36, 1)",
+              height: 68,
+              transform: pressed ? "scale(0.98)" : undefined,
+              transition: "transform 180ms cubic-bezier(0.22, 1, 0.36, 1)",
             }}
           >
-            <span className="text-neutral-900 text-xl font-bold leading-none">»</span>
-          </div>
+            <span
+              className="absolute left-0 top-0 bottom-0 bg-white/15 pointer-events-none"
+              style={{ width: `${fill}%`, transition: `width ${fillMs}ms linear` }}
+            />
+            <WhatsAppIcon className="relative z-10 h-5 w-5 text-white" />
+            <span className="relative z-10 text-white text-[17px] font-semibold tracking-wide">
+              {cfg.buttonLabel}
+            </span>
+          </button>
+          <p className="flex items-center gap-1.5 text-white/75 text-[13px] tracking-wide">
+            <HeartIcon className="h-3.5 w-3.5 text-white/90" />
+            with love, by Tal
+          </p>
         </div>
       </div>
     </div>
