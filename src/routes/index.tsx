@@ -5,7 +5,7 @@ const PAGE: "candidate" | "boss" = "candidate";
 
 const CONFIG = {
   candidate: {
-    headline: "I DO YOUR JOB SEARCH FOR YOU",
+    headline: "BOSSES OF BANGALORE",
     bubbles: [
       "i scan across multiple boards to find the right one for you.",
       "filtering through the noise — that's my job.",
