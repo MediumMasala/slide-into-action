@@ -5,7 +5,7 @@ const PAGE: "candidate" | "boss" = "candidate";
 
 const CONFIG = {
   candidate: {
-    headline: "I DO YOUR JOB SEARCH FOR YOU",
+    headline: "BOSSES OF BANGALORE",
     bubbles: [
       "i scan across multiple boards to find the right one for you.",
       "filtering through the noise — that's my job.",
@@ -112,26 +112,32 @@ function Index() {
       className="fixed inset-0 flex flex-col overflow-hidden"
       style={{ backgroundColor: "#FF6B1A" }}
     >
-      <main className="flex flex-1 flex-col items-center px-5 pt-8 pb-40 overflow-hidden">
-        <h1 className="text-white text-center font-black uppercase tracking-tight leading-[0.95] text-[2.25rem] sm:text-5xl max-w-md">
-          {cfg.headline}
-        </h1>
+      <main className="flex flex-1 flex-col gap-4 px-4 pt-5 pb-28 overflow-hidden">
+        {/* Tile 1 — Title front and center */}
+        <section className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm px-5 py-8 flex items-center justify-center">
+          <h1 className="text-white text-center font-black uppercase tracking-tight leading-[0.95] text-[2.5rem] sm:text-5xl">
+            {cfg.headline}
+          </h1>
+        </section>
 
-        <div className="mt-6 w-[60%] max-w-xs aspect-square rounded-[2rem] bg-white/15 border border-white/20 backdrop-blur-sm flex items-center justify-center overflow-hidden">
-          <span className="text-white/60 text-sm">mascot</span>
-        </div>
+        {/* Tile 2 — Mascot + messages */}
+        <section className="flex-1 min-h-0 rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm p-5 flex flex-col items-center gap-4 overflow-hidden">
+          <div className="w-[55%] max-w-[200px] aspect-square rounded-[1.75rem] bg-white/20 border border-white/25 flex items-center justify-center overflow-hidden shrink-0">
+            <span className="text-white/70 text-sm">mascot</span>
+          </div>
 
-        <div className="mt-6 w-full max-w-md flex flex-col gap-2 items-start">
-          {cfg.bubbles.map((b, i) => (
-            <div
-              key={i}
-              className="rounded-2xl rounded-bl-md px-4 py-3 text-[15px] leading-snug text-neutral-900 shadow-sm max-w-[88%]"
-              style={{ backgroundColor: "#FDF6EC" }}
-            >
-              {b}
-            </div>
-          ))}
-        </div>
+          <div className="w-full flex flex-col gap-2 items-start overflow-y-auto">
+            {cfg.bubbles.map((b, i) => (
+              <div
+                key={i}
+                className="rounded-2xl rounded-bl-md px-4 py-3 text-[15px] leading-snug text-neutral-900 shadow-sm max-w-[88%]"
+                style={{ backgroundColor: "#FDF6EC" }}
+              >
+                {b}
+              </div>
+            ))}
+          </div>
+        </section>
       </main>
 
       <div className="fixed bottom-4 left-4 right-4 z-10">
@@ -150,12 +156,13 @@ function Index() {
           <div
             ref={handleRef}
             onPointerDown={onPointerDown}
-            className="absolute top-1/2 -translate-y-1/2 rounded-full bg-white flex items-center justify-center shadow-md touch-none cursor-grab active:cursor-grabbing"
+            className="absolute rounded-full bg-white flex items-center justify-center shadow-md touch-none cursor-grab active:cursor-grabbing"
             style={{
               width: HANDLE_SIZE,
               height: HANDLE_SIZE,
+              top: (70 - HANDLE_SIZE) / 2,
               left: TRACK_PADDING,
-              transform: `translate(${x}px, -50%)`,
+              transform: `translateX(${x}px)`,
               transition: dragging ? "none" : "transform 320ms cubic-bezier(0.22, 1, 0.36, 1)",
             }}
           >
